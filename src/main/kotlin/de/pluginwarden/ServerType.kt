@@ -6,6 +6,7 @@ sealed interface ServerType {
 
     companion object {
         fun fromFile(pwd: File): Pair<ServerType, File>? {
+            Bukkit.isServerType(pwd)?.let { return Pair(Bukkit, it) }
             Spigot.isServerType(pwd)?.let { return Pair(Spigot, it) }
             Paper.isServerType(pwd)?.let { return Pair(Paper, it) }
             BungeeCord.isServerType(pwd)?.let { return Pair(BungeeCord, it) }
@@ -17,6 +18,27 @@ sealed interface ServerType {
 
     fun isServerType(pwd: File): File?
     fun getVersion(file: File): Version
+}
+
+object Bukkit: ServerType {
+
+    private val versionRegex = Regex("craftbukkit-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+)\\.jar")
+
+    override fun isServerType(pwd: File): File? {
+        return pwd.listFiles { dir, name -> name.startsWith("craftbukkit") && name.endsWith(".jar") }.firstOrNull()
+    }
+
+    override fun getVersion(file: File): Version {
+        versionRegex.find(file.name)?.let {
+            return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]!!.value.toInt())
+        }
+        // TODO: Add jar file parsing
+        return Version(0, 0, 0)
+    }
+
+    override fun toString(): String {
+        return "Bukkit"
+    }
 }
 
 object Spigot: ServerType {
