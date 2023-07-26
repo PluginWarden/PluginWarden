@@ -22,10 +22,10 @@ sealed interface ServerType {
 
 object Bukkit: ServerType {
 
-    private val versionRegex = Regex("craftbukkit-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+)\\.jar")
+    private val versionRegex = Regex("(craft)?bukkit-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+)\\.jar")
 
     override fun isServerType(pwd: File): File? {
-        return pwd.listFiles { dir, name -> name.startsWith("craftbukkit") && name.endsWith(".jar") }.firstOrNull()
+        return pwd.listFiles { dir, name -> (name.startsWith("craftbukkit") || name.startsWith("bukkit")) && name.endsWith(".jar") }.firstOrNull()
     }
 
     override fun getVersion(file: File): Version {
