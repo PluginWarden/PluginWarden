@@ -6,5 +6,16 @@ fun main() {
     val pwd = File(System.getProperty("user.dir"))
 
     val serverType = ServerType.fromFile(pwd)
-    println("${serverType?.first} -> ${serverType?.first?.getVersion(serverType.second)}")
+    if (serverType == null) {
+        println("No server detected!")
+        return
+    }
+
+    val version = serverType.first?.getVersion(serverType.second)
+    if (version == null) {
+        println("Unknown server version!")
+        return
+    }
+
+    println("${serverType.first} -> ${serverType.first.getVersion(serverType.second)}")
 }
