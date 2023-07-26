@@ -17,7 +17,7 @@ sealed interface ServerType {
     }
 
     fun isServerType(pwd: File): File?
-    fun getVersion(file: File): Version
+    fun getVersion(file: File): Version?
 }
 
 object Bukkit: ServerType {
@@ -28,12 +28,12 @@ object Bukkit: ServerType {
         return pwd.listFiles { dir, name -> (name.startsWith("craftbukkit") || name.startsWith("bukkit")) && name.endsWith(".jar") }.firstOrNull()
     }
 
-    override fun getVersion(file: File): Version {
+    override fun getVersion(file: File): Version? {
         versionRegex.find(file.name)?.let {
             return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]!!.value.toInt())
         }
         // TODO: Add jar file parsing
-        return Version(0, 0, 0)
+        return null
     }
 
     override fun toString(): String {
@@ -49,12 +49,12 @@ object Spigot: ServerType {
         return pwd.listFiles { dir, name -> name.startsWith("spigot") && name.endsWith(".jar") }.firstOrNull()
     }
 
-    override fun getVersion(file: File): Version {
+    override fun getVersion(file: File): Version? {
         versionRegex.find(file.name)?.let {
             return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]!!.value.toInt())
         }
         // TODO: Add jar file parsing
-        return Version(0, 0, 0)
+        return null
     }
 
     override fun toString(): String {
@@ -70,12 +70,12 @@ object Paper: ServerType {
         return pwd.listFiles { dir, name -> name.startsWith("paper") && name.endsWith(".jar") }.firstOrNull()
     }
 
-    override fun getVersion(file: File): Version {
+    override fun getVersion(file: File): Version? {
         versionRegex.find(file.name)?.let {
             return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]!!.value.toInt())
         }
         // TODO: Add jar file parsing
-        return Version(0, 0, 0)
+        return null
     }
 
     override fun toString(): String {
@@ -89,8 +89,8 @@ object BungeeCord: ServerType {
         return pwd.listFiles { dir, name -> name.startsWith("BungeeCord") && name.endsWith(".jar") }.firstOrNull()
     }
 
-    override fun getVersion(file: File): Version {
-        return Version(0, 0, 0)
+    override fun getVersion(file: File): Version? {
+        return null
     }
 
     override fun toString(): String {
@@ -106,12 +106,12 @@ object Waterfall: ServerType {
         return pwd.listFiles { dir, name -> name.startsWith("waterfall") && name.endsWith(".jar") }.firstOrNull()
     }
 
-    override fun getVersion(file: File): Version {
+    override fun getVersion(file: File): Version? {
         versionRegex.find(file.name)?.let {
             return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]?.value?.toInt() ?: 0)
         }
         // TODO: Add jar file parsing
-        return Version(0, 0, 0)
+        return null
     }
 
     override fun toString(): String {
@@ -127,12 +127,12 @@ object Velocity: ServerType {
         return pwd.listFiles { dir, name -> name.startsWith("velocity") && name.endsWith(".jar") }.firstOrNull()
     }
 
-    override fun getVersion(file: File): Version {
+    override fun getVersion(file: File): Version? {
         versionRegex.find(file.name)?.let {
             return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]!!.value.toInt())
         }
         // TODO: Add jar file parsing
-        return Version(0, 0, 0)
+        return null
     }
 
     override fun toString(): String {

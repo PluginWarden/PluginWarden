@@ -11,7 +11,7 @@ fun main() {
         return
     }
 
-    val version = serverType.first?.getVersion(serverType.second)
+    val version = serverType.first.getVersion(serverType.second)
     if (version == null) {
         println("Unknown server version!")
         return
