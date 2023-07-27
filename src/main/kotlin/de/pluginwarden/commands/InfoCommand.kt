@@ -1,24 +1,25 @@
+@file:OptIn(ExperimentalCli::class)
+
 package de.pluginwarden.commands
 
-import de.pluginwarden.data.Text
+import com.github.ajalt.mordant.table.table
 import de.pluginwarden.data.pluginsList
-import de.pluginwarden.data.table
 import de.pluginwarden.repository.getPluginStoragePlugin
 import de.pluginwarden.repository.updatePluginStorage
-import org.fusesource.jansi.Ansi.Color
+import de.pluginwarden.t
+import kotlinx.cli.ArgType
+import kotlinx.cli.Subcommand
 
-object InfoCommand: Command {
+import com.github.ajalt.mordant.rendering.TextColors.*
+import kotlinx.cli.ExperimentalCli
 
-    override fun execute(args: List<String>) {
-        if (args.isEmpty()) {
-            println("No plugin specified!")
-            return
-        }
+object InfoCommand: Subcommand("info", "Shows information about a plugin") {
+    private val plugin by argument(ArgType.String, description = "The plugin to show information about")
 
+    override fun execute() {
         updatePluginStorage()
 
-        val name = args.joinToString(" ")
-        val possiblePlugin = getPluginStoragePlugin(name)
+        val possiblePlugin = getPluginStoragePlugin(plugin)
         if (possiblePlugin == null) {
             println("Plugin not found!")
             return
@@ -26,15 +27,19 @@ object InfoCommand: Command {
 
         val installedPlugin = pluginsList?.find { plugin -> possiblePlugin.prefixes.any { plugin.file.nameWithoutExtension.startsWith(it, true) } }
 
-        table {
-            header(Text().append(name))
-            possiblePlugin.versions.forEach {
-                if (installedPlugin?.version == it) {
-                    row(Text().fgBright(Color.GREEN).append(it.toString()).reset())
-                } else {
-                    row(Text().append(it.toString()))
+        t.println(table {
+            header {
+                row(plugin)
+            }
+            body {
+                possiblePlugin.versions.forEach {
+                    if (installedPlugin?.version == it) {
+                        row(green(it.toString()))
+                    } else {
+                        row(it.toString())
+                    }
                 }
             }
-        }
+        })
     }
 }

@@ -1,10 +1,15 @@
 package de.pluginwarden.commands
 
+import com.github.ajalt.mordant.table.table
 import de.pluginwarden.data.*
+import de.pluginwarden.t
+import kotlinx.cli.ExperimentalCli
+import kotlinx.cli.Subcommand
 
-object ListCommand: Command {
+@OptIn(ExperimentalCli::class)
+object ListCommand: Subcommand("list", "Lists all installed plugins") {
 
-    override fun execute(args: List<String>) {
+    override fun execute() {
         if (serverType == null) {
             println("No server detected!")
             return
@@ -26,12 +31,15 @@ object ListCommand: Command {
             return@let it
         }
 
-        table {
-            header(Text().append("Name"))
-            header(Text().append("Version"))
-            plugins.forEach {
-                row(Text().append(it.file.nameWithoutExtension), Text().append(it.version.toString()))
+        t.println(table {
+            header {
+                row("Plugin", "Version")
             }
-        }
+            body {
+                plugins.forEach {
+                    row(it.file.nameWithoutExtension, it.version.toString())
+                }
+            }
+        })
     }
 }
