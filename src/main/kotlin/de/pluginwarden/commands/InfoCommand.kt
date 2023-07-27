@@ -5,7 +5,6 @@ import de.pluginwarden.data.pluginsList
 import de.pluginwarden.data.table
 import de.pluginwarden.repository.getPluginStoragePlugin
 import de.pluginwarden.repository.updatePluginStorage
-import org.fusesource.jansi.Ansi
 import org.fusesource.jansi.Ansi.Color
 
 object InfoCommand: Command {
