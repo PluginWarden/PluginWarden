@@ -2,15 +2,10 @@ package de.pluginwarden
 
 import de.pluginwarden.commands.ListCommand
 import de.pluginwarden.commands.RemoveCommand
-import de.pluginwarden.commands.UninstallCommand
-import de.pluginwarden.data.*
-import de.pluginwarden.repository.updatePluginStorage
-import java.io.File
 
 private val commands = mapOf(
     "list" to ListCommand,
     "remove" to RemoveCommand,
-    "uninstall" to UninstallCommand,
 )
 
 fun main(args: Array<String>) {
@@ -29,6 +24,4 @@ fun main(args: Array<String>) {
         command.value.execute(args.drop(1))
         return
     }
-
-    if (true) return
 }
