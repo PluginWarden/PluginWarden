@@ -14,6 +14,18 @@ sealed interface ServerType {
             Velocity.isServerType(pwd)?.let { return Pair(Velocity, it) }
             return null
         }
+
+        fun byName(name: String): ServerType {
+            return when (name.lowercase()) {
+                "bukkit" -> Bukkit
+                "spigot" -> Spigot
+                "paper" -> Paper
+                "bungeecord" -> BungeeCord
+                "waterfall" -> Waterfall
+                "velocity" -> Velocity
+                else -> throw IllegalArgumentException("Unknown ServerType: $name")
+            }
+        }
     }
 
     fun isServerType(pwd: File): File?

@@ -35,13 +35,31 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
             }
             body {
                 possiblePlugin.versions.forEach {
-                    if (installedPlugin?.version == it) {
-                        row(green(it.toString()))
+                    if (installedPlugin?.version == it.version) {
+                        row(green(it.version.toString()))
                     } else {
-                        row(it.toString())
+                        row(it.version.toString())
                     }
                 }
             }
         })
+        /*
+        t.println()
+        t.println(table {
+            header {
+                row("Group", "Dependency")
+            }
+            body {
+                possiblePlugin.versions[0].storagePluginDependencies.forEach {
+                    row(
+                        it.groupName,
+                        it.dependencies.entries.map {
+                            "${it.key}: ${it.value}"
+                        }.joinToString("\n")
+                    )
+                }
+            }
+        })
+         */
     }
 }

@@ -15,7 +15,7 @@ dependencies {
     implementation 'org.json:json:20230618'
     implementation 'org.jetbrains.kotlinx:kotlinx-cli-jvm:0.3.5'
     implementation 'com.github.ajalt.mordant:mordant:2.0.1'
-
+    implementation "org.jetbrains:markdown:0.4.1"
 }
 
 kotlin {
