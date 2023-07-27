@@ -9,17 +9,19 @@ import de.pluginwarden.repository.updatePluginStorage
 import de.pluginwarden.t
 import kotlinx.cli.ArgType
 import kotlinx.cli.Subcommand
+import kotlinx.cli.vararg
 
 import com.github.ajalt.mordant.rendering.TextColors.*
 import kotlinx.cli.ExperimentalCli
 
 object InfoCommand: Subcommand("info", "Shows information about a plugin") {
-    private val plugin by argument(ArgType.String, description = "The plugin to show information about")
+    private val plugin by argument(ArgType.String, description = "The plugin to show information about").vararg()
 
     override fun execute() {
         updatePluginStorage()
 
-        val possiblePlugin = getPluginStoragePlugin(plugin)
+        val name = plugin.joinToString(" ")
+        val possiblePlugin = getPluginStoragePlugin(name)
         if (possiblePlugin == null) {
             println("Plugin not found!")
             return
@@ -29,7 +31,7 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
 
         t.println(table {
             header {
-                row(plugin)
+                row(name)
             }
             body {
                 possiblePlugin.versions.forEach {
