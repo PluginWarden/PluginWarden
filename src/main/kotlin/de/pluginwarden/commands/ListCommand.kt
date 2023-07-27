@@ -1,7 +1,6 @@
 package de.pluginwarden.commands
 
 import de.pluginwarden.data.*
-import kotlin.math.max
 
 object ListCommand: Command {
 
@@ -27,14 +26,11 @@ object ListCommand: Command {
             return@let it
         }
 
-        val nameLength = max(plugins.map { it.file.nameWithoutExtension }.maxBy { it.length }.length, 4)
-        val versionLength = max(plugins.map { it.version.toString() }.maxBy { it.length }.length, 7)
-
         table {
-            header("Name")
-            header("Version")
+            header(Text().append("Name"))
+            header(Text().append("Version"))
             plugins.forEach {
-                row(it.file.nameWithoutExtension, it.version.toString())
+                row(Text().append(it.file.nameWithoutExtension), Text().append(it.version.toString()))
             }
         }
     }
