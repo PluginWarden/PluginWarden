@@ -1,35 +1,32 @@
+@file:OptIn(ExperimentalCli::class)
+
 package de.pluginwarden
 
-import de.pluginwarden.commands.InfoCommand
+import com.github.ajalt.mordant.terminal.Terminal
 import de.pluginwarden.commands.ListCommand
 import de.pluginwarden.commands.RemoveCommand
-import org.fusesource.jansi.AnsiConsole
+import kotlinx.cli.ArgParser
+import kotlinx.cli.ExperimentalCli
 
-private val commands = mapOf(
-    "info" to InfoCommand,
-    "list" to ListCommand,
-    "remove" to RemoveCommand,
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextStyles.*
+import de.pluginwarden.commands.InfoCommand
+
+private val commands = listOf(
+    ListCommand,
+    RemoveCommand,
+    InfoCommand
 )
 
+val t = Terminal()
+
 fun main(args: Array<String>) {
-    AnsiConsole.systemInstall()
-    Runtime.getRuntime().addShutdownHook(Thread {
-        AnsiConsole.systemUninstall()
-    })
-
-    if (args.isEmpty() || args[0] !in commands.keys) {
-        println("No command specified!")
-        println()
-        println("Available commands:")
-        commands.forEach { (name, _) ->
-            println("  $name")
-        }
-        return
-    }
-
-    for (command in commands) {
-        if (args[0] != command.key) continue
-        command.value.execute(args.drop(1))
+    val parser = ArgParser("pluginwarden")
+    parser.subcommands(*commands.toTypedArray())
+    val result = parser.parse(args)
+    if (result.commandName == "pluginwarden") {
+        println(red("No command specified!"))
+        println("Use ${bold("pluginwarden --help")} to get a list of all commands.")
         return
     }
 }

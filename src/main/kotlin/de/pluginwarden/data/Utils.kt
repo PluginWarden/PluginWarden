@@ -38,38 +38,3 @@ val pluginsDirectory by lazy {
 val pluginsList by lazy {
     pluginsDirectory?.listFiles { dir, name -> name.endsWith(".jar") }?.map(::InstalledPlugin)
 }
-
-fun table(func: Table.() -> Unit) {
-    Table().apply(func).print()
-}
-
-class Table {
-
-    private val header = mutableListOf<Text>()
-    private val rows = mutableListOf<List<Text>>()
-
-    fun header(text: Text): Table {
-        if (rows.isNotEmpty()) throw IllegalStateException("Header must be defined before rows!")
-        header.add(text)
-        return this
-    }
-
-    fun row(vararg text: Text): Table {
-        if (header.isEmpty()) throw IllegalStateException("Rows must be defined after header!")
-        if (text.size != header.size) throw IllegalArgumentException("Row must have same size as header!")
-        rows.add(text.toList())
-        return this
-    }
-
-    fun print() {
-        val columnWidths = header.mapIndexed { index, headerString -> max(rows.map { it[index].length() }.max(), headerString.length()) }
-        val rowFormat = "| ${columnWidths.joinToString(" | ") { "%-${it}s" }} |"
-        val headerFormat = "|${columnWidths.joinToString("|") { "%-${it}s" }}|"
-
-        println(rowFormat.format(*header.map { toString() }.toTypedArray()))
-        println(headerFormat.format(*columnWidths.map { "-".repeat(it + 2) }.toTypedArray()))
-        rows.forEach {
-            println(rowFormat.format(*it.map { toString() }.toTypedArray()))
-        }
-    }
-}
