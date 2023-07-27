@@ -44,7 +44,7 @@ fun String.toVersionChecker(): (Version) -> Pair<Boolean, Boolean> {
             val minFuzzy = min.toFuzzyVersion()
             val maxFuzzy = max.toFuzzyVersion()
             predicates.add { version ->
-                (version.toFuzzy() in minFuzzy..maxFuzzy) to warning
+                !(minFuzzy > version.toFuzzy() || maxFuzzy < version.toFuzzy()) to warning
             }
         } else {
             val checkedAgainst = it.toFuzzyVersion()

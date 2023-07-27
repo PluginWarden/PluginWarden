@@ -12,6 +12,10 @@ import kotlinx.cli.Subcommand
 import kotlinx.cli.vararg
 
 import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextStyle
+import com.github.ajalt.mordant.rendering.TextStyles.*
+import de.pluginwarden.data.serverType
+import de.pluginwarden.data.serverVersion
 import kotlinx.cli.ExperimentalCli
 
 object InfoCommand: Subcommand("info", "Shows information about a plugin") {
@@ -35,11 +39,22 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
             }
             body {
                 possiblePlugin.versions.forEach {
-                    if (installedPlugin?.version == it.version) {
-                        row(green(it.version.toString()))
-                    } else {
-                        row(it.version.toString())
+                    var style: TextStyle = reset + reset
+                    if (installedPlugin != null && it.version == installedPlugin.version) {
+                        style += bold
                     }
+                    pluginsList?.forEach {pl ->
+                        if(it.storagePluginIncompatibilities.none { incompatibility -> incompatibility.pluginName == pl.name && !incompatibility.versionChecker(pl.version).first  }) {
+                            style += green
+                        }
+                    }
+                    if(it.storagePluginServerVersions.any { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).second }) {
+                        style += yellow
+                    }
+                    if(it.storagePluginServerVersions.none { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).first }) {
+                        style += red
+                    }
+                    row(style(it.version.toString()))
                 }
             }
         })
