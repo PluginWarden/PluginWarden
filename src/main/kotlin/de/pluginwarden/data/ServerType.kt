@@ -1,4 +1,4 @@
-package de.pluginwarden
+package de.pluginwarden.data
 
 import java.io.File
 
