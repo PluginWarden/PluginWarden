@@ -1,7 +1,9 @@
 package de.pluginwarden.data
 
+import com.github.ajalt.mordant.rendering.TextColors
+import com.github.ajalt.mordant.rendering.TextStyle
+import com.github.ajalt.mordant.rendering.TextStyles
 import java.io.File
-import kotlin.math.max
 
 private val versionRegex = Regex("(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)(\\.(?<PATCH>\\d+))?.*")
 
@@ -36,5 +38,24 @@ val pluginsDirectory by lazy {
 }
 
 val pluginsList by lazy {
-    pluginsDirectory?.listFiles { dir, name -> name.endsWith(".jar") }?.map(::InstalledPlugin)
+    pluginsDirectory?.listFiles { _, name -> name.endsWith(".jar") }?.map(::InstalledPlugin)
+}
+
+fun getColor(plugin: StoragePluginVersion, installedPlugin: InstalledPlugin?): TextStyle {
+    var style: TextStyle = TextStyles.reset + TextStyles.reset
+    if (installedPlugin != null && plugin.version == installedPlugin.version) {
+        style += TextStyles.bold
+    }
+    pluginsList?.forEach {pl ->
+        if(plugin.storagePluginIncompatibilities.none { incompatibility -> incompatibility.pluginName == pl.name && !incompatibility.versionChecker(pl.version).first  }) {
+            style += TextColors.green
+        }
+    }
+    if(plugin.storagePluginServerVersions.any { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).second }) {
+        style += TextColors.yellow
+    }
+    if(plugin.storagePluginServerVersions.none { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).first }) {
+        style += TextColors.red
+    }
+    return style
 }

@@ -3,23 +3,20 @@
 package de.pluginwarden.commands
 
 import com.github.ajalt.mordant.table.table
-import de.pluginwarden.data.pluginsList
 import de.pluginwarden.repository.getPluginStoragePlugin
 import de.pluginwarden.repository.updatePluginStorage
 import de.pluginwarden.t
-import kotlinx.cli.ArgType
-import kotlinx.cli.Subcommand
-import kotlinx.cli.vararg
 
 import com.github.ajalt.mordant.rendering.TextColors.*
-import com.github.ajalt.mordant.rendering.TextStyle
 import com.github.ajalt.mordant.rendering.TextStyles.*
-import de.pluginwarden.data.serverType
-import de.pluginwarden.data.serverVersion
-import kotlinx.cli.ExperimentalCli
+import de.pluginwarden.data.*
+import kotlinx.cli.*
+import java.net.URI
 
 object InfoCommand: Subcommand("info", "Shows information about a plugin") {
     private val plugin by argument(ArgType.String, description = "The plugin to show information about").vararg()
+    private val version by option(ArgType.String, description = "The version of the plugin to show information about", shortName = "v")
+    private val downloadLink by option(ArgType.Boolean, description = "Show the full Download link", shortName = "d").default(false)
 
     override fun execute() {
         updatePluginStorage()
@@ -33,48 +30,66 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
 
         val installedPlugin = pluginsList?.find { plugin -> possiblePlugin.prefixes.any { plugin.file.nameWithoutExtension.startsWith(it, true) } }
 
-        t.println(table {
-            header {
-                row(name)
-            }
-            body {
-                possiblePlugin.versions.forEach {
-                    var style: TextStyle = reset + reset
-                    if (installedPlugin != null && it.version == installedPlugin.version) {
-                        style += bold
+        if(version == null) {
+            t.println(table {
+                captionTop(name)
+                header {
+                    row("Version", "Servers")
+                }
+                body {
+                    possiblePlugin.versions.forEach {
+                        row(
+                            it.storagePluginServerVersions.map { if (it.serverType == serverType) green(it.serverType.toString()) else it.serverType.toString() }.joinToString(", "),
+                            getColor(it, installedPlugin)(it.version.toString())
+                        )
                     }
-                    pluginsList?.forEach {pl ->
-                        if(it.storagePluginIncompatibilities.none { incompatibility -> incompatibility.pluginName == pl.name && !incompatibility.versionChecker(pl.version).first  }) {
-                            style += green
+                }
+            })
+        } else {
+            val version = possiblePlugin.versions.firstOrNull { it.version.toString() == version }
+            if(version == null) {
+                println(red(bold("Version not found!")))
+                println(red(bold("Available Versions:")))
+                println("  ${red(possiblePlugin.versions.joinToString(", ") { it.version.toString() })}")
+                return
+            }
+
+            t.println("${underline("Name")}: ${getColor(version, installedPlugin)(name)}")
+            t.println("${underline("Version")}: ${version.version}")
+            t.println("${underline("Servers")}: ${version.storagePluginServerVersions.map { if (it.serverType == serverType) green(it.serverType.toString()) else it.serverType.toString() }.joinToString(", ")}")
+            if(version.storagePluginIncompatibilities.isNotEmpty()) {
+                t.println("${underline("Incompatibilities")}: ${version.storagePluginIncompatibilities.joinToString(", ") { red(it.pluginName) }}")
+            }
+            if(version.storagePluginDownloads.size == 1) {
+                t.println("${underline("Download")}: ${if(downloadLink) version.storagePluginDownloads.first().link else URI.create(version.storagePluginDownloads.first().link).host}")
+            } else {
+                t.println()
+                t.println(table {
+                    captionTop("Download Links")
+                    header {
+                        row("Server", "Link")
+                    }
+                    body {
+                        version.storagePluginDownloads.forEach {
+                            row(it.serverType, if(downloadLink) it.link else URI.create(it.link).host)
                         }
                     }
-                    if(it.storagePluginServerVersions.any { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).second }) {
-                        style += yellow
+                })
+            }
+            if(version.storagePluginDependencies.isNotEmpty()) {
+                t.println()
+                t.println(table {
+                    captionTop("Dependencies")
+                    header {
+                        row("Group", "Options")
                     }
-                    if(it.storagePluginServerVersions.none { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).first }) {
-                        style += red
+                    body {
+                        version.storagePluginDependencies.forEach {
+                            row(underline(it.groupName), it.dependencies.map { "${it.key}:${it.value}" }.joinToString("\n"))
+                        }
                     }
-                    row(style(it.version.toString()))
-                }
+                })
             }
-        })
-        /*
-        t.println()
-        t.println(table {
-            header {
-                row("Group", "Dependency")
-            }
-            body {
-                possiblePlugin.versions[0].storagePluginDependencies.forEach {
-                    row(
-                        it.groupName,
-                        it.dependencies.entries.map {
-                            "${it.key}: ${it.value}"
-                        }.joinToString("\n")
-                    )
-                }
-            }
-        })
-         */
+        }
     }
 }
