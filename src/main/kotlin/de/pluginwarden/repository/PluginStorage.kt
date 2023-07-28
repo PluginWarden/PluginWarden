@@ -15,12 +15,30 @@ fun updatePluginStorage() {
     }
 }
 
+val allPlugins by lazy {
+    pluginStorageDirectory.listFiles()?.filter { it.isDirectory }?.map { it.listFiles() }?.flatMap { it.map { pl -> StoragePlugin(pl) } }
+}
+
 fun getPluginStoragePlugin(name: String): StoragePlugin? {
     val prefixDirectory = File(pluginStorageDirectory, name.substring(0..0))
     if (!prefixDirectory.exists()) return null
     val pluginDirectory = File(prefixDirectory, name)
     if (!pluginDirectory.exists()) return null
     return StoragePlugin(pluginDirectory)
+}
+
+fun searchStoragePlugin(query: String, spaceAnd: Boolean): List<StoragePlugin> {
+    val plugins = mapOf(
+        *allPlugins!!.map {
+            "${it.prefixes.joinToString(" ")} ${
+                it.prefixes.joinToString(" ") { n ->
+                    n.toCharArray().filter { c -> c.isUpperCase() }.joinToString("")
+                }
+            }" to it
+        }.toTypedArray()
+    )
+
+    return plugins.filter { if (spaceAnd) query.split(" ").all { q -> it.key.contains(q, true) } else query.split(" ").any { q -> it.key.contains(q, true) } }.map { it.value }
 }
 
 private fun cmd(vararg command: String): String {

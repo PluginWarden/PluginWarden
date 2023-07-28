@@ -11,11 +11,13 @@ import kotlinx.cli.ExperimentalCli
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextStyles.*
 import de.pluginwarden.commands.InfoCommand
+import de.pluginwarden.commands.SearchCommand
 
 private val commands = listOf(
     ListCommand,
     RemoveCommand,
-    InfoCommand
+    InfoCommand,
+    SearchCommand
 )
 
 val t = Terminal()

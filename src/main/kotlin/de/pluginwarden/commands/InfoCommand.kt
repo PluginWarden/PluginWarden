@@ -9,6 +9,7 @@ import de.pluginwarden.t
 
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextStyles.*
+import com.github.ajalt.mordant.table.Borders
 import de.pluginwarden.data.*
 import kotlinx.cli.*
 import java.net.URI
@@ -36,12 +37,16 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
                 header {
                     row("Servers", "Version")
                 }
+                tableBorders = Borders.ALL
                 body {
                     possiblePlugin.versions.forEach {
-                        row(
-                            it.storagePluginServerVersions.map { if (it.serverType == serverType) green(it.serverType.toString()) else it.serverType.toString() }.joinToString(", "),
-                            getColor(it, installedPlugin)(it.version.toString())
-                        )
+                        cellBorders = Borders.LEFT_RIGHT
+                        row {
+                            cells(
+                                it.storagePluginServerVersions.map { if (it.serverType == serverType) green(it.serverType.toString()) else it.serverType.toString() }.joinToString(", "),
+                                getColor(it, installedPlugin)(it.version.toString())
+                            )
+                        }
                     }
                 }
             })
