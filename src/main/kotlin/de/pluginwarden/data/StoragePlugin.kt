@@ -17,7 +17,7 @@ class StoragePlugin(val file: File) {
     val versions: List<StoragePluginVersion> by lazy {
         file.listFiles { _, name -> name.endsWith(".md") }
             ?.map(::StoragePluginVersion)
-            ?.sortedBy { it.version }
+            ?.sortedByDescending { it.version }
             ?: emptyList()
     }
 }
