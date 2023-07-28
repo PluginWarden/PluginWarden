@@ -59,3 +59,8 @@ fun getColor(plugin: StoragePluginVersion, installedPlugin: InstalledPlugin?): T
     }
     return style
 }
+
+fun StoragePluginVersion.isCompatible() = storagePluginServerVersions.any { sv ->
+    sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).first } &&
+        storagePluginIncompatibilities.none { ic ->
+            pluginsList?.any { pl -> pl.file.nameWithoutExtension.startsWith(ic.pluginName, true) && !ic.versionChecker(pl.version).first } ?: false }

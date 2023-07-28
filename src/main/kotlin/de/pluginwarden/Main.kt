@@ -3,21 +3,19 @@
 package de.pluginwarden
 
 import com.github.ajalt.mordant.terminal.Terminal
-import de.pluginwarden.commands.ListCommand
-import de.pluginwarden.commands.RemoveCommand
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ExperimentalCli
 
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.rendering.TextStyles.*
-import de.pluginwarden.commands.InfoCommand
-import de.pluginwarden.commands.SearchCommand
+import de.pluginwarden.commands.*
 
 private val commands = listOf(
     ListCommand,
     RemoveCommand,
     InfoCommand,
-    SearchCommand
+    SearchCommand,
+    InstallCommand
 )
 
 val t = Terminal()
