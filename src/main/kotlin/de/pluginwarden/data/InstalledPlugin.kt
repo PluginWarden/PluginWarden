@@ -1,5 +1,6 @@
 package de.pluginwarden.data
 
+import de.pluginwarden.repository.getPluginStoragePlugin
 import org.json.JSONObject
 import java.io.File
 import java.util.jar.JarFile
@@ -64,6 +65,14 @@ class InstalledPlugin(val file: File) {
             }
         }
         return@lazy "Unknown"
+    }
+
+    val storagePlugin by lazy {
+        return@lazy getPluginStoragePlugin(name)
+    }
+
+    val storagePluginVersion by lazy {
+        return@lazy storagePlugin?.versions?.firstOrNull { it.version == version }
     }
 
     fun uninstall() {
