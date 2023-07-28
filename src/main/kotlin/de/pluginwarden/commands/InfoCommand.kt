@@ -2,14 +2,20 @@
 
 package de.pluginwarden.commands
 
+import com.github.ajalt.mordant.rendering.Lines
+import com.github.ajalt.mordant.rendering.TextAlign
 import com.github.ajalt.mordant.table.table
 import de.pluginwarden.repository.getPluginStoragePlugin
 import de.pluginwarden.repository.updatePluginStorage
 import de.pluginwarden.t
 
 import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.rendering.TextStyle
+import com.github.ajalt.mordant.rendering.TextStyles
 import com.github.ajalt.mordant.rendering.TextStyles.*
 import com.github.ajalt.mordant.table.Borders
+import com.github.ajalt.mordant.widgets.HorizontalRule
+import com.github.ajalt.mordant.widgets.Text
 import de.pluginwarden.data.*
 import kotlinx.cli.*
 import java.net.URI
@@ -59,15 +65,54 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
                 return
             }
 
-            t.println("${underline("Name")}: ${getColor(version, installedPlugin)(name)}")
-            t.println("${underline("Version")}: ${version.version}")
-            t.println("${underline("Servers")}: ${version.storagePluginServerVersions.map { if (it.serverType == serverType) green(it.serverType.toString()) else it.serverType.toString() }.joinToString(", ")}")
-            if(version.storagePluginIncompatibilities.isNotEmpty()) {
-                t.println("${underline("Incompatibilities")}: ${version.storagePluginIncompatibilities.joinToString(", ") { red(it.pluginName) }}")
-            }
-            if(version.storagePluginDownloads.size == 1) {
-                t.println("${underline("Download")}: ${if(downloadLink) version.storagePluginDownloads.first().link else URI.create(version.storagePluginDownloads.first().link).host}")
-            } else {
+            t.println("")
+            t.println(table {
+                captionTop(HorizontalRule(title = Text(name)))
+                cellBorders = Borders.NONE
+                body {
+                    row {
+                        cell(bold("Name")) {
+                            align = TextAlign.RIGHT
+                        }
+                        cell(getColor(version, installedPlugin)(name))
+                    }
+                    row {
+                        cell(bold("Version")) {
+                            align = TextAlign.RIGHT
+                        }
+                        cell(version.version)
+                    }
+                    row {
+                        cell(bold("Servers")) {
+                            align = TextAlign.RIGHT
+                        }
+                        cell(version.storagePluginServerVersions.joinToString(", ") {
+                            if (it.serverType == serverType) green(
+                                it.serverType.toString()
+                            ) else it.serverType.toString()
+                        })
+                    }
+                    if (version.storagePluginIncompatibilities.isNotEmpty()) {
+                        row {
+                            cell(bold("Incompatibilities")) {
+                                align = TextAlign.RIGHT
+                            }
+                            cell(version.storagePluginIncompatibilities.joinToString(", ") { red(it.pluginName) })
+                        }
+                    }
+
+                    if(version.storagePluginDownloads.size == 1) {
+                        row {
+                            cell(bold("Download")) {
+                                align = TextAlign.RIGHT
+                            }
+                            cell(if (downloadLink) version.storagePluginDownloads.first().link else URI.create(version.storagePluginDownloads.first().link).host)
+                        }
+                    }
+                }
+            })
+
+            if (version.storagePluginDownloads.size != 1 && version.storagePluginDownloads.isNotEmpty()) {
                 t.println()
                 t.println(table {
                     captionTop("Download Links")
@@ -95,6 +140,7 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
                     }
                 })
             }
+            t.println()
         }
     }
 }
