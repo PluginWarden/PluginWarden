@@ -21,7 +21,7 @@ object InstallCommand: Subcommand("install", "Installs a plugin") {
     override fun execute() {
         updatePluginStorage()
         val name = plugin.joinToString(" ")
-        val plugins = name.split(",")
+        val plugins = name.split(",").map { it.trim() }
 
         val plToInstall = plugins.map { pl ->
             val vSplit = pl.split(":")

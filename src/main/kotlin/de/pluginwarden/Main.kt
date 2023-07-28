@@ -15,7 +15,8 @@ private val commands = listOf(
     RemoveCommand,
     InfoCommand,
     SearchCommand,
-    InstallCommand
+    InstallCommand,
+    UninstallCommand
 )
 
 val t = Terminal()
