@@ -51,10 +51,10 @@ fun getColor(plugin: StoragePluginVersion, installedPlugin: InstalledPlugin?): T
             style += TextColors.green
         }
     }
-    if(plugin.storagePluginServerVersions.any { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).second }) {
+    if(serverType != null && plugin.storagePluginServerVersions.any { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).second }) {
         style += TextColors.yellow
     }
-    if(plugin.storagePluginServerVersions.none { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).first }) {
+    if(serverType != null && plugin.storagePluginServerVersions.none { sv -> sv.serverType == serverType && sv.compatibilityChecker(serverVersion!!).first }) {
         style += TextColors.red
     }
     return style

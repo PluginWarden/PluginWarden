@@ -34,7 +34,7 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
             t.println(table {
                 captionTop(name)
                 header {
-                    row("Version", "Servers")
+                    row("Servers", "Version")
                 }
                 body {
                     possiblePlugin.versions.forEach {
@@ -49,8 +49,8 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
             val version = possiblePlugin.versions.firstOrNull { it.version.toString() == version }
             if(version == null) {
                 println(red(bold("Version not found!")))
-                println(red(bold("Available Versions:")))
-                println("  ${red(possiblePlugin.versions.joinToString(", ") { it.version.toString() })}")
+                println(bold("Available Versions:"))
+                println("  ${possiblePlugin.versions.joinToString(", ") { it.version.toString() }}")
                 return
             }
 
