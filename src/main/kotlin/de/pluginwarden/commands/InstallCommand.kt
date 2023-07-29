@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCli::class)
+
 package de.pluginwarden.commands
 
 import com.github.ajalt.mordant.rendering.TextColors.*
@@ -8,10 +10,7 @@ import de.pluginwarden.data.*
 import de.pluginwarden.repository.getPluginStoragePlugin
 import de.pluginwarden.repository.updatePluginStorage
 import de.pluginwarden.t
-import kotlinx.cli.ArgType
-import kotlinx.cli.Subcommand
-import kotlinx.cli.default
-import kotlinx.cli.vararg
+import kotlinx.cli.*
 import java.io.File
 import java.net.URL
 
@@ -31,6 +30,11 @@ object InstallCommand: Subcommand("install", "Installs a plugin") {
 
     override fun execute() {
         updatePluginStorage()
+        if(pluginsList == null) {
+            t.println(red("Not inside a server directory!"))
+            return
+        }
+
         val name = plugin.joinToString(" ")
         val plugins = name.split(",").map { it.trim() }
 
@@ -104,8 +108,8 @@ object InstallCommand: Subcommand("install", "Installs a plugin") {
                         t.println("Version ${red(version.toString())} of plugin ${red(p.prefixes.joinToString(" "))} not found!")
                         throw Exception("Version ${red(version.toString())} of plugin ${red(p.prefixes.joinToString(" "))} not found!")
                     }
-                    val file = v.storagePluginDownloads.firstOrNull { dl -> dl.serverType == serverType } ?: v.storagePluginDownloads.first()
-                    return download(file.link)
+                    val df = v.storagePluginDownloads.firstOrNull { dl -> dl.serverType == serverType } ?: v.storagePluginDownloads.first()
+                    return download(df.link)
                 }
 
                 val installedDeps = pluginsList!!.filter { ip -> d.dependencies.any { dd -> dd.key == ip.name } }
@@ -135,15 +139,16 @@ object InstallCommand: Subcommand("install", "Installs a plugin") {
                     downloadDep(d.dependencies.entries.first().key, d.dependencies.entries.first().value) to d.dependencies.entries.first()
                 } else {
                     t.println("Download Dependency ${red(d.groupName)}")
-                    d.dependencies.entries.forEachIndexed { index, entry ->
+                    val validDeps = d.dependencies.entries.filter { vv -> getPluginStoragePlugin(vv.key)?.versions?.find { it.version == vv.value }?.isCompatible() ?: false };
+                    validDeps.forEachIndexed { index, entry ->
                         t.println("  ${index + 1}. ${entry.key}:${entry.value}")
                     }
 
                     val dInstall = t.prompt("Which dependency do you want to download?", default = "1") {
                         val i = it.toIntOrNull()
                         if(i == null) ConversionResult.Invalid("Invalid choice")
-                        else if(i < 1 || i > d.dependencies.size) ConversionResult.Invalid("Invalid choice")
-                        else ConversionResult.Valid(d.dependencies.entries.toList()[i - 1].key)
+                        else if(i < 1 || i > validDeps.size) ConversionResult.Invalid("Invalid choice")
+                        else ConversionResult.Valid(validDeps.toList()[i - 1].key)
                     }
 
                     downloadDep(dInstall!!, d.dependencies[dInstall]!!) to d.dependencies.entries.first { it.key == dInstall }
