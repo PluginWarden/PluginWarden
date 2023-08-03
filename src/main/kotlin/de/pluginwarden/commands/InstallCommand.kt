@@ -16,7 +16,7 @@ import java.io.FileInputStream
 import java.net.URL
 import java.util.zip.ZipInputStream
 
-object InstallCommand: Subcommand("install", "Installs a plugin") {
+object InstallCommand : Subcommand("install", "Installs a plugin") {
     private val plugin by argument(ArgType.String, description = "The plugin to install").vararg()
     private val force by option(ArgType.Boolean, description = "Force the installation of the plugin", shortName = "f").default(false)
     private val yes by option(ArgType.Boolean, description = "Answer yes to all questions", shortName = "y").default(false)
@@ -49,16 +49,103 @@ object InstallCommand: Subcommand("install", "Installs a plugin") {
         }
     }
 
+    private fun getNotFindablePlugins(plugins: List<Pair<String, String?>>) =
+        plugins.filter { getPluginStoragePlugin(it.first) == null }
+
+    private fun getIncompatiblePlugins(plugins: List<Pair<String, String?>>) =
+        plugins.filter {
+            val storagePlugin = getPluginStoragePlugin(it.first)
+                ?: return@filter false
+            if (it.second != null) {
+                if (force) return@filter false
+                val version = storagePlugin.versions.firstOrNull { v -> v.version.toString() == it.second }
+                    ?: return@filter false
+                return@filter !version.isCompatible()
+            } else {
+                return@filter storagePlugin.versions.none { v -> v.isCompatible() }
+            }
+        }
+
+    private fun convertToStoragePluginVersion(plugin: Pair<String, String?>): StoragePluginVersion {
+        val storagePlugin = getPluginStoragePlugin(plugin.first) ?: throw IllegalStateException("Plugin ${plugin.first} not found!")
+        if (plugin.second != null) {
+            val version = storagePlugin.versions.firstOrNull { v -> v.version.toString() == plugin.second }
+                ?: throw IllegalStateException("Version ${plugin.second} of plugin ${plugin.first} not found!")
+            return version
+        } else {
+            return storagePlugin.versions.firstOrNull { v -> v.isCompatible() }
+                ?: throw IllegalStateException("No compatible version of plugin ${plugin.first} found!")
+        }
+    }
+
+    private fun getPluginsToInstall(plugins: List<Pair<String, String?>>): List<StoragePluginVersion> {
+        val toInstall: MutableList<StoragePluginVersion> = mutableListOf()
+        val toIterate: MutableList<StoragePluginVersion> = mutableListOf()
+        plugins.forEach { toIterate.add(convertToStoragePluginVersion(it)) }
+
+        while (toIterate.isNotEmpty()) {
+            val current = toIterate.removeAt(0)
+            if (toInstall.contains(current)) continue
+            toInstall.add(current)
+
+            // TODO: Add dependencies
+        }
+
+        return toInstall
+    }
+
+    private fun prompt(question: String): Boolean {
+        t.prompt(question, choices = listOf("Yes", "No"), default = "Yes") {
+            if (it.startsWith("n")) ConversionResult.Valid("No")
+            else if (it.startsWith("y") || it.startsWith("j")) ConversionResult.Valid("Yes")
+            else ConversionResult.Invalid("Invalid choice")
+        }.let {
+            if (it == "No") return false
+        }
+        return true
+    }
+
     override fun execute() {
         updatePluginStorage()
-        if(pluginsList == null) {
+        if (pluginsList == null) {
             t.println(red("Not inside a server directory!"))
             return
         }
 
         val name = plugin.joinToString(" ")
         val plugins = name.split(",").map { it.trim() }
+            .map {
+                val split = it.split(":")
+                if (split.size == 1) it to null
+                else split[0] to split[1]
+            }
+            .toMutableList()
 
+        getNotFindablePlugins(plugins).let {
+            plugins.removeAll(it)
+            if (it.isNotEmpty() && !yes) {
+                t.println("Plugins ${red(it.joinToString(", ", transform = { it.first }))} not found!")
+                if (plugins.isEmpty()) return
+                if (!prompt("Should found plugin be installed?")) {
+                    return
+                }
+            }
+        }
+
+        getIncompatiblePlugins(plugins).let {
+            plugins.removeAll(it)
+            if (it.isNotEmpty() && !yes) {
+                t.println("Plugins ${red(it.joinToString(", ", transform = { it.first }))} are incompatible!")
+                if (plugins.isEmpty()) return
+                if (!prompt("Should every compatible plugin be installed?")) {
+                    return
+                }
+            }
+        }
+
+        getPluginsToInstall(plugins);
+
+        /*
         val plToInstall = plugins.map { pl ->
             val vSplit = pl.split(":")
             val p = getPluginStoragePlugin(vSplit[0])
@@ -191,5 +278,6 @@ object InstallCommand: Subcommand("install", "Installs a plugin") {
 
             t.println("Installed ${green(it.second.prefixes.first())}!")
         }
+         */
     }
 }
