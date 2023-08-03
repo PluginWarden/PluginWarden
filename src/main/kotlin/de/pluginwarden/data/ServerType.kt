@@ -9,6 +9,7 @@ sealed interface ServerType {
             Bukkit.isServerType(pwd)?.let { return Pair(Bukkit, it) }
             Spigot.isServerType(pwd)?.let { return Pair(Spigot, it) }
             Paper.isServerType(pwd)?.let { return Pair(Paper, it) }
+            Purpur.isServerType(pwd)?.let { return Pair(Purpur, it) }
             BungeeCord.isServerType(pwd)?.let { return Pair(BungeeCord, it) }
             Waterfall.isServerType(pwd)?.let { return Pair(Waterfall, it) }
             Velocity.isServerType(pwd)?.let { return Pair(Velocity, it) }
@@ -20,6 +21,7 @@ sealed interface ServerType {
                 "bukkit" -> Bukkit
                 "spigot" -> Spigot
                 "paper" -> Paper
+                "purpur" -> Purpur
                 "bungeecord" -> BungeeCord
                 "waterfall" -> Waterfall
                 "velocity" -> Velocity
@@ -30,9 +32,10 @@ sealed interface ServerType {
 
     fun isServerType(pwd: File): File?
     fun getVersion(file: File): Version?
+    fun isCompatibleWith(serverType: ServerType): Boolean = false
 }
 
-object Bukkit: ServerType {
+data object Bukkit: ServerType {
 
     private val versionRegex = Regex("(craft)?bukkit-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+)\\.jar")
 
@@ -48,12 +51,12 @@ object Bukkit: ServerType {
         return null
     }
 
-    override fun toString(): String {
-        return "Bukkit"
+    override fun isCompatibleWith(serverType: ServerType): Boolean {
+        return serverType is Spigot || serverType is Paper || serverType is Purpur
     }
 }
 
-object Spigot: ServerType {
+data object Spigot: ServerType {
 
     private val versionRegex = Regex("spigot-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+)\\.jar")
 
@@ -69,12 +72,12 @@ object Spigot: ServerType {
         return null
     }
 
-    override fun toString(): String {
-        return "Spigot"
+    override fun isCompatibleWith(serverType: ServerType): Boolean {
+        return serverType is Paper || serverType is Purpur
     }
 }
 
-object Paper: ServerType {
+data object Paper: ServerType {
 
     private val versionRegex = Regex("paper-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+).*?\\.jar")
 
@@ -90,12 +93,29 @@ object Paper: ServerType {
         return null
     }
 
-    override fun toString(): String {
-        return "Paper"
+    override fun isCompatibleWith(serverType: ServerType): Boolean {
+        return serverType is Purpur
     }
 }
 
-object BungeeCord: ServerType {
+data object Purpur: ServerType {
+
+    private val versionRegex = Regex("purpur-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+).*?\\.jar")
+
+    override fun isServerType(pwd: File): File? {
+        return pwd.listFiles { dir, name -> name.startsWith("purpur") && name.endsWith(".jar") }.firstOrNull()
+    }
+
+    override fun getVersion(file: File): Version? {
+        versionRegex.find(file.name)?.let {
+            return Version(it.groups["MAJOR"]!!.value.toInt(), it.groups["MINOR"]!!.value.toInt(), it.groups["PATCH"]!!.value.toInt())
+        }
+        // TODO: Add jar file parsing
+        return null
+    }
+}
+
+data object BungeeCord: ServerType {
 
     override fun isServerType(pwd: File): File? {
         return pwd.listFiles { dir, name -> name.startsWith("BungeeCord") && name.endsWith(".jar") }.firstOrNull()
@@ -105,12 +125,12 @@ object BungeeCord: ServerType {
         return null
     }
 
-    override fun toString(): String {
-        return "BungeeCord"
+    override fun isCompatibleWith(serverType: ServerType): Boolean {
+        return serverType is Waterfall
     }
 }
 
-object Waterfall: ServerType {
+data object Waterfall: ServerType {
 
     private val versionRegex = Regex("waterfall-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)(\\.(?<PATCH>\\d+))?.*?\\.jar")
 
@@ -125,13 +145,9 @@ object Waterfall: ServerType {
         // TODO: Add jar file parsing
         return null
     }
-
-    override fun toString(): String {
-        return "Waterfall"
-    }
 }
 
-object Velocity: ServerType {
+data object Velocity: ServerType {
 
     private val versionRegex = Regex("velocity-(?<MAJOR>\\d+)\\.(?<MINOR>\\d+)\\.(?<PATCH>\\d+).*?\\.jar")
 
@@ -145,9 +161,5 @@ object Velocity: ServerType {
         }
         // TODO: Add jar file parsing
         return null
-    }
-
-    override fun toString(): String {
-        return "Velocity"
     }
 }
