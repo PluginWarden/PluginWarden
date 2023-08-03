@@ -83,11 +83,15 @@ class StoragePluginVersion(file: File) {
                 when(state) {
                     ParserState.DOWNLOAD -> {
                         val args = value.getTextInNode(content).split(": ")
-                        if(args.size == 1) {
-                            storagePluginDownloads.add(StoragePluginDownload(null, args[0]))
-                        } else {
-                            storagePluginDownloads.add(StoragePluginDownload(ServerType.byName(args[0]), args[1].trim()))
+                        var arg = args.last().trim()
+                        var file: String? = null
+                        val serverType = if (args.size == 1) null else ServerType.byName(args[0])
+                        if (arg.contains(" -> ")) {
+                            val split = arg.split(" -> ")
+                            arg = split[0]
+                            file = split[1]
                         }
+                        storagePluginDownloads.add(StoragePluginDownload(serverType, Pair(arg, file)))
                     }
                     ParserState.SERVER -> {
                         val args = value.getTextInNode(content).split(": ")
@@ -117,7 +121,7 @@ class StoragePluginVersion(file: File) {
     }
 }
 
-data class StoragePluginDownload(val serverType: ServerType?, val link: String)
+data class StoragePluginDownload(val serverType: ServerType?, val link: Pair<String, String?>)
 
 data class StoragePluginServerVersion(val serverType: ServerType, val compatibilityChecker: (Version) -> Pair<Boolean, Boolean>)
 

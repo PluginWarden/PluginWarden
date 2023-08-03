@@ -12,20 +12,41 @@ import de.pluginwarden.repository.updatePluginStorage
 import de.pluginwarden.t
 import kotlinx.cli.*
 import java.io.File
+import java.io.FileInputStream
 import java.net.URL
+import java.util.zip.ZipInputStream
 
 object InstallCommand: Subcommand("install", "Installs a plugin") {
     private val plugin by argument(ArgType.String, description = "The plugin to install").vararg()
     private val force by option(ArgType.Boolean, description = "Force the installation of the plugin", shortName = "f").default(false)
     private val yes by option(ArgType.Boolean, description = "Answer yes to all questions", shortName = "y").default(false)
 
-    fun download(url: String): File {
-        val tmpFile = File.createTempFile("pluginwarden", ".jar")
+    fun download(link: Pair<String, String?>): File {
+        val tmpFile = File.createTempFile("pluginwarden", if (link.second != null) ".zip" else ".jar")
         tmpFile.deleteOnExit()
-        t.println("Downloading ${green(url)}...")
-        URL(url).openStream().transferTo(tmpFile.outputStream())
-        t.println("Downloaded ${green(url)}!")
-        return tmpFile
+        t.println("Downloading ${green(link.first)}...")
+        URL(link.first).openStream().transferTo(tmpFile.outputStream())
+        t.println("Downloaded ${green(link.first)}!")
+
+        if (link.second != null) {
+            ZipInputStream(FileInputStream(tmpFile)).use { zip ->
+                var entry = zip.nextEntry
+                while (entry != null) {
+                    if (entry.name == link.second) {
+                        val tmpFile = File.createTempFile("pluginwarden", ".jar")
+                        tmpFile.deleteOnExit()
+                        tmpFile.outputStream().use { output ->
+                            zip.copyTo(output)
+                        }
+                        return tmpFile
+                    }
+                    entry = zip.nextEntry
+                }
+            }
+            throw IllegalStateException("Could not find ${link.second} in ${link.first}!")
+        } else {
+            return tmpFile
+        }
     }
 
     override fun execute() {

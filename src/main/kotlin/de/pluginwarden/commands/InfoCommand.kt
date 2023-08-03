@@ -106,7 +106,7 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
                             cell(bold("Download")) {
                                 align = TextAlign.RIGHT
                             }
-                            cell(if (downloadLink) version.storagePluginDownloads.first().link else URI.create(version.storagePluginDownloads.first().link).host)
+                            cell(if (downloadLink) version.storagePluginDownloads.first().link else URI.create(version.storagePluginDownloads.first().link.first).host)
                         }
                     }
                 }
@@ -121,7 +121,7 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
                     }
                     body {
                         version.storagePluginDownloads.forEach {
-                            row(it.serverType, if(downloadLink) it.link else URI.create(it.link).host)
+                            row(it.serverType, if(downloadLink) it.link else URI.create(it.link.first).host)
                         }
                     }
                 })
