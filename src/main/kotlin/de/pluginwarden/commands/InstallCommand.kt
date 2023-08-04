@@ -193,6 +193,12 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
                 else ConversionResult.Valid(dependenciesToAdd[i - 1])
             }
             if (dInstall is String) {
+                if (dInstall as String == "$default") {
+                    val result = dependenciesToAdd[default - 1]
+                    alreadySpecified.add(result.second to result.first.version.toString())
+                    recurse.add(result.first)
+                    toInstall.add(result.first)
+                }
                 return@forEach
             }
 
@@ -299,6 +305,9 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
             toInstall.addAll(it.first.dependencyList(alreadySpecified))
         }
 
+        toInstall.forEach {
+            t.println("Installing ${green(it.name)}:${green(it.version.toString())}")
+        }
         println(toInstall.size)
 
         return

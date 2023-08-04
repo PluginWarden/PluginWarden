@@ -27,6 +27,7 @@ val parser = MarkdownParser(flavour)
 
 class StoragePluginVersion(file: File) {
 
+    val name = file.parentFile.name
     val version = file.nameWithoutExtension.toVersion()
 
     val storagePluginDownloads: MutableList<StoragePluginDownload>
