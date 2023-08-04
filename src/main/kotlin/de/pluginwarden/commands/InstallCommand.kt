@@ -302,7 +302,7 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
                     } else if (storagePluginVersion.second == Availability.NO_VALID_VERSION) {
                         row(it.first, it.second ?: "???", red("No valid version"))
                     } else if (storagePluginVersion.second == Availability.INCOMPATIBLE) {
-                        row(it.first, storagePluginVersion.first!!.version, yellow("Incompatible"))
+                        row(it.first, storagePluginVersion.first?.version ?: "???", yellow("Incompatible"))
                     } else {
                         val deepCompatability = storagePluginVersion.first!!.isDeepCompatible(it)
                         when(deepCompatability) {
@@ -324,6 +324,9 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
             }
         })
 
+        if (installable.isEmpty()) {
+            return
+        }
         if (hasWarning) {
             t.println("Some plugins are not fully compatible with the server. They may not work as expected!")
         }

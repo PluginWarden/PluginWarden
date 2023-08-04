@@ -1,5 +1,8 @@
 package de.pluginwarden.commands
 
+import com.github.ajalt.mordant.rendering.TextColors
+import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.table.Borders
 import com.github.ajalt.mordant.table.table
 import de.pluginwarden.data.*
 import de.pluginwarden.t
@@ -32,12 +35,23 @@ object ListCommand: Subcommand("list", "Lists all installed plugins") {
         }
 
         t.println(table {
+            tableBorders = Borders.ALL
             header {
-                row("Plugin", "Version")
+                row("Plugin", "Version", "Updatable")
             }
             body {
+                cellBorders = Borders.LEFT_RIGHT
                 plugins.forEach {
-                    row(it.file.nameWithoutExtension, it.version.toString())
+                    val storagePlugin = it.storagePlugin
+                    if (storagePlugin == null) {
+                        row(it.file.nameWithoutExtension, it.version.toString(), yellow("Unknown"))
+                        return@forEach
+                    }
+                    val index = storagePlugin.versions.asReversed().indexOfFirst { v -> v.version == it.version }
+                    val compatbile = storagePlugin.versions.asReversed().drop(index + 1).any {
+                        it.isCompatible()
+                    }
+                    row(it.file.nameWithoutExtension, it.version.toString(), if (compatbile) green("Yes") else red("No"))
                 }
             }
         })
