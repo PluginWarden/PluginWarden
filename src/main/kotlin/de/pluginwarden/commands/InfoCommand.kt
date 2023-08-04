@@ -135,7 +135,7 @@ object InfoCommand: Subcommand("info", "Shows information about a plugin") {
                     }
                     body {
                         version.storagePluginDependencies.forEach {
-                            row(underline(it.groupName), it.dependencies.map { "${it.key}:${it.value}" }.joinToString("\n"))
+                            row(underline(it.groupName), it.dependencies.map { "${it.first}:${it.second}" }.joinToString("\n"))
                         }
                     }
                 })

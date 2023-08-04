@@ -74,3 +74,12 @@ fun StoragePluginVersion.isCompatible(): Boolean {
         }
     }
 }
+
+fun StoragePluginVersion.shouldBeWarned(): Boolean {
+    if (!isCompatible()) return false
+    return storagePluginServerVersions.filter { sv ->
+        sv.serverType == serverType || (serverType != null && sv.serverType.isCompatibleWith(serverType!!))
+    }.any { sv ->
+        sv.compatibilityChecker(serverVersion!!).second
+    }
+}

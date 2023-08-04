@@ -61,18 +61,18 @@ class StoragePluginVersion(file: File) {
             }
             if (list == null) {
                 val args = par.split(": ")
-                storagePluginDependencies.add(StoragePluginDependency(args[0], mapOf(Pair(args[0], args[1].toVersion()))))
+                storagePluginDependencies.add(StoragePluginDependency(args[0], listOf(Pair(args[0], args[1].toVersion()))))
             } else {
-                val map = mutableMapOf<String, Version>()
+                val pairList = mutableListOf<Pair<String, Version>>()
                 list!!.children.forEach {li ->
                     li.children.forEach { pars ->
                         if(pars.type.name == "PARAGRAPH") {
                             val args = pars.getTextInNode(content).split(": ")
-                            map[args[0]] = args[1].toVersion()
+                            pairList.add(args[0] to args[1].toVersion())
                         }
                     }
                 }
-                storagePluginDependencies.add(StoragePluginDependency(par.toString(), map))
+                storagePluginDependencies.add(StoragePluginDependency(par.toString(), pairList))
             }
         }
 
@@ -127,7 +127,7 @@ data class StoragePluginServerVersion(val serverType: ServerType, val compatibil
 
 data class StoragePluginIncompatibility(val pluginName: String, val versionChecker: (Version) -> Pair<Boolean, Boolean>)
 
-data class StoragePluginDependency(val groupName: String, val dependencies: Map<String, Version>)
+data class StoragePluginDependency(val groupName: String, val dependencies: List<Pair<String, Version>>)
 
 private enum class ParserState(val v: String) {
     STARTING(""),

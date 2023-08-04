@@ -3,6 +3,7 @@
 package de.pluginwarden.commands
 
 import com.github.ajalt.mordant.rendering.TextColors.*
+import com.github.ajalt.mordant.table.Borders
 import com.github.ajalt.mordant.table.table
 import com.github.ajalt.mordant.terminal.ConversionResult
 import com.github.ajalt.mordant.widgets.HorizontalRule
@@ -49,57 +50,161 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
         }
     }
 
-    private fun getNotFindablePlugins(plugins: List<Pair<String, String?>>): List<Pair<String, String?>> {
-        return plugins.filter { getPluginStoragePlugin(it.first) == null }
-    }
-
-    private fun getIncompatiblePlugins(plugins: List<Pair<String, String?>>): List<Pair<String, String?>> {
-        return plugins.filter {
-            val storagePluginVersion = it.convertToStoragePluginVersion()
-                ?: return@filter true
-            if (force && it.second != null) {
-                return@filter false
-            }
-
-            fun checkDependencies(storagePluginVersion: StoragePluginVersion): Boolean {
-                if (storagePluginVersion.storagePluginDependencies.isEmpty()) {
-                    return false
-                }
-
-                return !storagePluginVersion.storagePluginDependencies.all {
-                    return@all it.dependencies.any {
-                        val plugin = (it.key to it.value.toString()).convertToStoragePluginVersion()
-                            ?: return@any false
-                        return@any checkDependencies(plugin)
-                    }
-                }
-            }
-            return@filter checkDependencies(storagePluginVersion)
-        }
-    }
-
-    private fun Pair<String, String?>.convertToStoragePluginVersion(): StoragePluginVersion? {
-        val storagePlugin = getPluginStoragePlugin(first) ?: return null
+    private fun Pair<String, String?>.convertToStoragePluginVersion(): Pair<StoragePluginVersion?, Availability> {
+        val storagePlugin = getPluginStoragePlugin(first) ?: return null to Availability.NOT_FOUND
         return if (second != null) {
-            storagePlugin.versions.firstOrNull { v -> v.version.toString() == second }
+            val result = storagePlugin.versions.firstOrNull { v -> v.version.toString() == second }
+            if (result == null) {
+                null to Availability.NO_VALID_VERSION
+            } else {
+                result to Availability.FOUND
+            }
         } else {
-            storagePlugin.versions.firstOrNull { v -> v.isCompatible() }
+            val result = storagePlugin.versions.firstOrNull { v -> v.isCompatible() }
+            if (result == null) {
+                null to Availability.INCOMPATIBLE
+            } else {
+                result to Availability.FOUND
+            }
         }
     }
 
-    private fun getPluginsToInstall(plugins: List<Pair<String, String?>>): List<StoragePluginVersion> {
-        val toInstall: MutableList<StoragePluginVersion> = mutableListOf()
-        val toIterate: MutableList<StoragePluginVersion> = mutableListOf()
-        plugins.forEach { toIterate.add(it.convertToStoragePluginVersion()!!) }
-
-        while (toIterate.isNotEmpty()) {
-            val current = toIterate.removeAt(0)
-            if (toInstall.contains(current)) continue
-            toInstall.add(current)
-
-            // TODO: Add dependencies
+    private fun StoragePluginVersion.isDeepCompatible(plugin: Pair<String, String?>): Compatibility {
+        if (plugin.second != null && force) {
+            println("Plugin ${plugin.first} ${this.shouldBeWarned()}")
+            return if (this.shouldBeWarned()) Compatibility.WARNING else Compatibility.COMPATIBLE
+        }
+        if (!force && !this.isCompatible()) {
+            return Compatibility.INCOMPATIBLE
         }
 
+        val alreadyChecked = mutableMapOf<StoragePluginVersion, Boolean>()
+        alreadyChecked[this] = true
+
+        fun checkDependencies(storagePluginVersion: StoragePluginVersion): Compatibility {
+            if (storagePluginVersion.storagePluginDependencies.isEmpty()) {
+                return Compatibility.COMPATIBLE
+            }
+
+            val compatibilityList = storagePluginVersion.storagePluginDependencies.map {
+                val compatibilityList = it.dependencies.map {
+                    val pluginDep = (it.first to it.second.toString()).convertToStoragePluginVersion().also { (_, availability) ->
+                        if (availability != Availability.FOUND) return@map Compatibility.INCOMPATIBLE
+                    }.first!!
+                    if (!pluginDep.isCompatible()) {
+                        return@map Compatibility.INCOMPATIBLE
+                    }
+                    val isWarned = pluginDep.shouldBeWarned()
+                    val result = checkDependencies(pluginDep)
+                    if (result == Compatibility.INCOMPATIBLE) {
+                        return@map Compatibility.INCOMPATIBLE
+                    }
+                    if (isWarned) {
+                        return@map Compatibility.WARNING
+                    }
+                    return@map Compatibility.COMPATIBLE
+                }
+
+                if (compatibilityList.none { it == Compatibility.COMPATIBLE }) {
+                    if (compatibilityList.none { it == Compatibility.WARNING }) {
+                        return@map Compatibility.INCOMPATIBLE
+                    }
+                    return@map Compatibility.WARNING
+                }
+                return@map Compatibility.COMPATIBLE
+            }
+
+            if (compatibilityList.any { it == Compatibility.INCOMPATIBLE }) {
+                return Compatibility.INCOMPATIBLE
+            }
+            if (compatibilityList.any { it == Compatibility.WARNING }) {
+                return Compatibility.WARNING
+            }
+            return Compatibility.COMPATIBLE
+        }
+        val result = checkDependencies(this)
+        return if (result == Compatibility.COMPATIBLE) {
+            if (shouldBeWarned()) Compatibility.WARNING else Compatibility.COMPATIBLE
+        } else {
+            result
+        }
+    }
+
+    private fun StoragePluginVersion.dependencyList(alreadySpecified: MutableList<Pair<String, String>>): MutableList<StoragePluginVersion> {
+        val recurse = mutableListOf<StoragePluginVersion>()
+        val toInstall = mutableListOf<StoragePluginVersion>()
+
+        storagePluginDependencies.forEach {
+            // Get all dependencies that are compatible or forced in the format Pair<StoragePluginVersion, String>
+            val dependenciesToAdd = it.dependencies.map {
+                // Convert dependency to StoragePluginVersion and check availability
+                (it.first to it.second.toString()).convertToStoragePluginVersion().also { (spv, availability) ->
+                    // If the dependency is not found and not forced, return null
+                    if (!force && availability != Availability.FOUND) return@map null to it.first
+                    // If the dependency is forced, return the dependency and the version
+                    if (force) return@map spv to it.first
+                }.first!! to it.first // Convert to Pair<StoragePluginVersion, String>
+            }.filter { it.first != null }
+                .map { it as Pair<StoragePluginVersion, String> }
+                // Remove all dependencies that are incompatible or non if forced
+                .filter { force || it.first.isCompatible() }
+
+            // If any of the dependencies are already specified, there is no choise to make
+            dependenciesToAdd.any {
+                alreadySpecified.any { dep ->
+                    dep.first == it.second && dep.second == it.first.version.toString()
+                }
+            }.yes {
+                return@forEach
+            }
+
+            if (dependenciesToAdd.isEmpty()) {
+                if (it.dependencies.isNotEmpty()) {
+                    t.println("No compatible version of ${red(it.dependencies.first().first)} found!")
+                    throw IllegalStateException("No compatible version of ${it.dependencies.first().first} found!")
+                }
+                return@forEach
+            }
+            if (dependenciesToAdd.size == 1) {
+                dependenciesToAdd.first().let {
+                    alreadySpecified.add(it.second to it.first.version.toString())
+                    recurse.add(it.first)
+                    toInstall.add(it.first)
+                }
+                return@forEach
+            }
+
+            // If there are multiple dependencies, ask the user which one to use
+            val first = dependenciesToAdd.first()
+            t.println("Download Dependency ${red(first.second)}")
+            var default = 0
+            dependenciesToAdd.forEachIndexed { index, entry ->
+                if (force && default == 0 && entry.first.isCompatible()) {
+                    default = index + 1
+                }
+                t.println("  ${index + 1}. ${entry.second}:${entry.first.version}")
+            }
+            if (default == 0) default = 1
+
+            val dInstall = t.prompt("Which dependency do you want to download?", default = "$default") {
+                val i = it.toIntOrNull()
+                if(i == null) ConversionResult.Invalid("Invalid choice")
+                else if(i < 1 || i > dependenciesToAdd.size) ConversionResult.Invalid("Invalid choice")
+                else ConversionResult.Valid(dependenciesToAdd[i - 1])
+            }
+            if (dInstall is String) {
+                return@forEach
+            }
+
+            val result = dInstall as Pair<StoragePluginVersion, String>
+            alreadySpecified.add(result.second to result.first.version.toString())
+            recurse.add(result.first)
+            toInstall.add(result.first)
+        }
+
+        recurse.forEach {
+            toInstall.addAll(it.dependencyList(alreadySpecified))
+        }
         return toInstall
     }
 
@@ -112,6 +217,14 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
             if (it == "No") return false
         }
         return true
+    }
+
+    private inline fun Boolean.yes(action: () -> Unit) {
+        if (this) action()
+    }
+
+    private inline fun Boolean.no(action: () -> Unit) {
+        if (!this) action()
     }
 
     override fun execute() {
@@ -130,29 +243,65 @@ object InstallCommand : Subcommand("install", "Installs a plugin") {
             }
             .toMutableList()
 
-        getNotFindablePlugins(plugins).let {
-            plugins.removeAll(it)
-            if (it.isNotEmpty() && !yes) {
-                t.println("Plugin${if (it.size == 1) "" else "s"} ${red(it.joinToString(", ", transform = { "${it.first}${if (it.second == null) "" else ":${it.second}"}" }))} not found!")
-                if (plugins.isEmpty()) return
-                if (!prompt("Should found plugin be installed?")) {
-                    return
+        val installable = mutableListOf<Pair<StoragePluginVersion, String>>()
+        var hasWarning = false
+        t.println(table {
+            tableBorders = Borders.ALL
+            captionTop("Plugins to install")
+            header {
+                row("Plugin", "Version", "Status")
+            }
+            body {
+                cellBorders = Borders.LEFT_RIGHT
+                plugins.forEach {
+                    val storagePluginVersion = it.convertToStoragePluginVersion()
+                    if (storagePluginVersion.second == Availability.NOT_FOUND) {
+                        row(it.first, it.second ?: "???", red("Not found"))
+                    } else if (storagePluginVersion.second == Availability.NO_VALID_VERSION) {
+                        row(it.first, it.second ?: "???", red("No valid version"))
+                    } else if (storagePluginVersion.second == Availability.INCOMPATIBLE) {
+                        row(it.first, storagePluginVersion.first!!.version, yellow("Incompatible"))
+                    } else {
+                        val deepCompatability = storagePluginVersion.first!!.isDeepCompatible(it)
+                        when(deepCompatability) {
+                            Compatibility.COMPATIBLE -> {
+                                row(it.first, storagePluginVersion.first!!.version, green("Compatible"))
+                                installable.add(storagePluginVersion.first!! to it.first)
+                            }
+                            Compatibility.WARNING -> {
+                                row(it.first, storagePluginVersion.first!!.version, yellow("Compatible"))
+                                installable.add(storagePluginVersion.first!! to it.first)
+                                hasWarning = true
+                            }
+                            Compatibility.INCOMPATIBLE -> {
+                                row(it.first, storagePluginVersion.first!!.version, yellow("Incompatible"))
+                            }
+                        }
+                    }
                 }
             }
+        })
+
+        if (hasWarning) {
+            t.println("Some plugins are not fully compatible with the server. They may not work as expected!")
+        }
+        if (hasWarning || !yes) {
+            prompt("Do you want to install ${green("Compatible")} plugins?").no { return }
         }
 
-        getIncompatiblePlugins(plugins).let {
-            plugins.removeAll(it)
-            if (it.isNotEmpty() && !yes) {
-                t.println("Plugin${if (it.size == 1) "" else "s"} ${red(it.joinToString(", ", transform = { "${it.first}${if (it.second == null) "" else ":${it.second}"}" }))} ${if (it.size == 1) "is" else "are"} incompatible!")
-                if (plugins.isEmpty()) return
-                if (!prompt("Should every compatible plugin be installed?")) {
-                    return
-                }
-            }
+        val alreadySpecified = mutableListOf<Pair<String, String>>()
+        installable.forEach {
+            alreadySpecified.add(it.second to it.first.version.toString())
+        }
+        val toInstall = mutableListOf<StoragePluginVersion>()
+        toInstall.addAll(installable.map { it.first })
+        installable.forEach {
+            toInstall.addAll(it.first.dependencyList(alreadySpecified))
         }
 
-        getPluginsToInstall(plugins);
+        println(toInstall.size)
+
+        return
 
         /*
         val plToInstall = plugins.map { pl ->
