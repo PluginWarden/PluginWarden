@@ -16,7 +16,10 @@ fun updatePluginStorage() {
 }
 
 val allPlugins by lazy {
-    pluginStorageDirectory.listFiles()?.filter { it.isDirectory }?.map { it.listFiles() }?.flatMap { it.map { pl -> StoragePlugin(pl) } }
+    pluginStorageDirectory.listFiles()?.filter { it.isDirectory }?.map { it.listFiles() }?.flatMap {
+        it?.map { pl -> StoragePlugin(pl) }
+            ?: listOf()
+    }
 }
 
 fun getPluginStoragePlugin(name: String): StoragePlugin? {

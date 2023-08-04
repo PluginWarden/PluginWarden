@@ -16,7 +16,7 @@ class StoragePlugin(val file: File) {
 
     val versions: List<StoragePluginVersion> by lazy {
         file.listFiles { _, name -> name.endsWith(".md") }
-            ?.map(::StoragePluginVersion)
+            ?.map { StoragePluginVersion(it, this) }
             ?.sortedByDescending { it.version }
             ?: emptyList()
     }
@@ -25,7 +25,7 @@ class StoragePlugin(val file: File) {
 val flavour = CommonMarkFlavourDescriptor()
 val parser = MarkdownParser(flavour)
 
-class StoragePluginVersion(file: File) {
+class StoragePluginVersion(file: File, val plugin: StoragePlugin) {
 
     val name = file.parentFile.name
     val version = file.nameWithoutExtension.toVersion()
@@ -113,8 +113,12 @@ class StoragePluginVersion(file: File) {
 
         ast.children.forEach {
             if(it.type.name == "ATX_2") {
-                val name = getHeaderName(it)
-                state = ParserState.values().first { i -> i.v == name }
+                try {
+                    val name = getHeaderName(it)
+                    state = ParserState.values().first { i -> i.v == name }
+                } catch (e: Exception) {
+                    // ignore
+                }
             } else if(it.type.name == "UNORDERED_LIST") {
                 parseList(it)
             }

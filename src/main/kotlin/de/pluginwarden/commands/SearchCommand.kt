@@ -12,7 +12,7 @@ import com.github.ajalt.mordant.table.table
 import de.pluginwarden.data.getColor
 import kotlinx.cli.*
 
-object SearchCommand: Subcommand("search", "Searches for plugins") {
+object SearchCommand : Subcommand("search", "Searches for plugins") {
     private val query by argument(ArgType.String, description = "The query to search for").vararg()
     private val and by option(ArgType.Boolean, description = "Spaces as And", shortName = "a").default(false)
 
@@ -22,7 +22,7 @@ object SearchCommand: Subcommand("search", "Searches for plugins") {
         val query = query.joinToString(" ")
         val plugins = searchStoragePlugin(query, and)
 
-        if(plugins.isEmpty()) {
+        if (plugins.isEmpty()) {
             t.println(red("No plugins found!"))
             return
         }
