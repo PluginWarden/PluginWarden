@@ -27,7 +27,7 @@ val parser = MarkdownParser(flavour)
 
 class StoragePluginVersion(file: File, val plugin: StoragePlugin) {
 
-    val name = file.parentFile.name
+    val name: String = file.parentFile.name!!
     val version = file.nameWithoutExtension.toVersion()
 
     val storagePluginDownloads: MutableList<StoragePluginDownload>
@@ -123,6 +123,22 @@ class StoragePluginVersion(file: File, val plugin: StoragePlugin) {
                 parseList(it)
             }
         }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StoragePluginVersion) return false
+
+        if (name != other.name) return false
+        if (version != other.version) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + version.hashCode()
+        return result
     }
 }
 

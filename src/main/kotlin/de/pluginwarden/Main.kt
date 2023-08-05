@@ -13,6 +13,7 @@ import de.pluginwarden.commands.*
 import org.fusesource.jansi.AnsiConsole
 
 private val commands = listOf(
+    TempCommand,
     ListCommand,
     RemoveCommand,
     InfoCommand,
