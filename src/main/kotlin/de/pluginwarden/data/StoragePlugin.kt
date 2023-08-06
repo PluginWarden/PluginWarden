@@ -8,6 +8,8 @@ import java.io.File
 
 class StoragePlugin(val file: File) {
 
+    val name = file.name
+
     val prefixes: List<String> by lazy {
         val versionFile = File(file, ".version")
         if (!versionFile.exists()) return@lazy emptyList<String>()
