@@ -22,6 +22,23 @@ class StoragePlugin(val file: File) {
             ?.sortedByDescending { it.version }
             ?: emptyList()
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StoragePlugin) return false
+
+        if (file != other.file) return false
+        if (name != other.name) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = file.hashCode()
+        result = 31 * result + (name.hashCode()
+            ?: 0)
+        return result
+    }
 }
 
 val flavour = CommonMarkFlavourDescriptor()

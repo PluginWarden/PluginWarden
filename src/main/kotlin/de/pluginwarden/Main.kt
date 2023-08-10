@@ -3,17 +3,15 @@
 package de.pluginwarden
 
 import com.github.ajalt.mordant.rendering.AnsiLevel
+import com.github.ajalt.mordant.rendering.TextColors.red
+import com.github.ajalt.mordant.rendering.TextStyles.bold
 import com.github.ajalt.mordant.terminal.Terminal
+import de.pluginwarden.commands.*
 import kotlinx.cli.ArgParser
 import kotlinx.cli.ExperimentalCli
-
-import com.github.ajalt.mordant.rendering.TextColors.*
-import com.github.ajalt.mordant.rendering.TextStyles.*
-import de.pluginwarden.commands.*
 import org.fusesource.jansi.AnsiConsole
 
 private val commands = listOf(
-    TempCommand,
     ListCommand,
     RemoveCommand,
     InfoCommand,
