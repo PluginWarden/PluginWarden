@@ -1,10 +1,10 @@
 package de.pluginwarden.commands
 
-import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.rendering.TextColors.*
 import com.github.ajalt.mordant.table.Borders
 import com.github.ajalt.mordant.table.table
 import de.pluginwarden.data.*
+import de.pluginwarden.repository.updatePluginStorage
 import de.pluginwarden.t
 import kotlinx.cli.ExperimentalCli
 import kotlinx.cli.Subcommand
@@ -26,6 +26,7 @@ object ListCommand: Subcommand("list", "Lists all installed plugins") {
             return
         }
 
+        updatePluginStorage()
         val plugins = pluginsList.let {
             if (it!!.isEmpty()) {
                 println("No plugins installed!")
@@ -47,11 +48,8 @@ object ListCommand: Subcommand("list", "Lists all installed plugins") {
                         row(it.file.nameWithoutExtension, it.version.toString(), yellow("Unknown"))
                         return@forEach
                     }
-                    val index = storagePlugin.versions.asReversed().indexOfFirst { v -> v.version == it.version }
-                    val compatbile = storagePlugin.versions.asReversed().drop(index + 1).any {
-                        it.isCompatible()
-                    }
-                    row(it.file.nameWithoutExtension, it.version.toString(), if (compatbile) green("Yes") else red("No"))
+                    val compatible = storagePlugin.versions.takeWhile { v -> v.version > it.version }.firstOrNull { it.isCompatible() }
+                    row(it.file.nameWithoutExtension, it.version.toString(), if (compatible != null) green("Yes") + " -> " + compatible.version.toString() else red("No"))
                 }
             }
         })
